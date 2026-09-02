@@ -1,0 +1,11 @@
+# Firmware build tree. The sketch stages the canonical protocol sources into it
+# at build time and deletes them afterwards; nothing here is a source of record.
+hardware/esp32-gatt-peer/build/
+
+# .NET build output for the host harness
+tools/ble-over-air-peer/bin/
+tools/ble-over-air-peer/obj/
+
+# CMake build trees
+build/
+out/

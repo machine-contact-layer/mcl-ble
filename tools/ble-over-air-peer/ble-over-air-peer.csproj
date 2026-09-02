@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Host harness for the MCL-BLE over-air experiment.
+
+    C# is used only because Windows exposes Bluetooth LE scanning and GATT
+    exclusively through WinRT. All protocol work is done by mcl_ble_host.dll,
+    built from this repository's C sources; see tools/ble_host_shim.c.
+  -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows10.0.22621.0</TargetFramework>
+    <SupportedOSPlatformVersion>10.0.19041.0</SupportedOSPlatformVersion>
+    <Nullable>disable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>mcl_ble_over_air_peer</AssemblyName>
+    <RootNamespace>Mcl.Ble.OverAir</RootNamespace>
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+</Project>

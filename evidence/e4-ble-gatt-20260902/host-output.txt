@@ -1,0 +1,23 @@
+MCL-BLE over-air peer
+=====================
+frame_max=1048 default_mtu=23 payload_per_pdu=19
+
+  [+] connectionless presence in advertising data
+      advertised frame: 19 bytes
+      decoded: class=0 src=0B1E1154 seq=0 kind=0
+  [+] valid CONTACT carrying PRESENCE
+      frame=25 bytes in 2 fragments at MTU 23
+  [+] valid DATA carrying HAZARD
+      frame=29 bytes in 2 fragments at MTU 23
+  [+] KEEPALIVE with no payload
+      frame=8 bytes in 1 fragments at MTU 23
+  [-] continuation fragment with no START
+  [-] sequence gap between fragments
+  [-] START whose sequence is not zero
+  [-] valid fragments carrying a frame with a corrupted CRC
+  [+] a good frame after the refusals
+  [=] sustained exchange of 20 fragmented frames
+      acked=20 of 20
+      fragments received=49 reassembly refusals=0
+
+35 checks, 0 failed
