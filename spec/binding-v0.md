@@ -88,6 +88,22 @@ A START always begins a new frame. Any frame already in progress is dropped
 without being delivered: the peer either restarted or its END was missed, and
 either outcome forbids joining the old bytes to the new frame.
 
+### The reassembly limit and the sequence field
+
+The reassembly limit MUST equal the largest Link frame the negotiated Link major
+can produce, which is 1048 bytes for `link_major` 0. A lower limit makes the
+binding unable to carry a legal frame.
+
+That bound and the six-bit sequence are coupled. At the smallest permitted MTU a
+fragment carries 19 bytes, so a maximal frame needs 56 fragments, and the
+sequence has 64 values. The sequence MUST NOT be able to wrap within one frame:
+if it could, a receiver that lost exactly one full modulus of fragments would
+observe the sequence it expected and splice unrelated bytes into the middle of a
+frame. No reassembly rule can detect that afterwards, so the property is
+established by construction rather than checked at runtime, and an
+implementation MUST assert it at compile time so that raising the frame limit or
+lowering the MTU cannot break it silently.
+
 ## Connectionless presence
 
 A Link frame small enough to fit advertising data may be broadcast with no

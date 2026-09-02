@@ -291,6 +291,65 @@ static void test_advertisement_fit(void)
     CHECK(mcl_ble_fits_advertisement(0u) == 0u, "empty does not fit");
 }
 
+/*
+ * The binding must carry the largest frame Link can legally produce, at the
+ * smallest MTU BLE permits. This is the case a reassembly limit chosen
+ * independently of Link would silently fail, and it is also the case that
+ * comes closest to exhausting the six-bit fragment sequence.
+ */
+static void test_carries_a_maximal_link_frame(void)
+{
+    static uint8_t payload[MCL_LINK_FRAME_MAX_PAYLOAD];
+    static uint8_t frame[MCL_LINK_FRAME_MAX_SIZE];
+    static mcl_ble_reassembler_t r;
+    mcl_link_frame_t tx;
+    uint8_t pdu[MCL_BLE_ATT_DEFAULT_MTU];
+    size_t written = 0u, count, i, produced = 0u, done = 0u;
+    mcl_ble_status_t st = MCL_BLE_ERR_INCOMPLETE;
+
+    printf("[TEST] a maximal Link frame survives fragmentation at the minimum MTU\n");
+
+    for (i = 0u; i < sizeof(payload); ++i) {
+        payload[i] = (uint8_t)(i * 31u + 7u);
+    }
+
+    memset(&tx, 0, sizeof(tx));
+    tx.frame_class = MCL_LINK_CLASS_DATA;
+    tx.flags = (uint8_t)(MCL_LINK_FLAG_DESTINATION | MCL_LINK_FLAG_SESSION |
+                         MCL_LINK_FLAG_SEQUENCE | MCL_LINK_FLAG_FRESHNESS |
+                         MCL_LINK_FLAG_INTEGRITY);
+    tx.source_ref = 0x01020304u;
+    tx.payload = payload;
+    tx.payload_len = (uint16_t)sizeof(payload);
+
+    CHECK(mcl_link_frame_encode(&tx, frame, sizeof(frame), &written) == MCL_LINK_OK,
+          "maximal frame encodes");
+    CHECK(written == (size_t)MCL_LINK_FRAME_MAX_SIZE,
+          "maximal frame is exactly MCL_LINK_FRAME_MAX_SIZE");
+
+    count = mcl_ble_fragment_count(written, MCL_BLE_ATT_DEFAULT_MTU);
+    CHECK(count > 0u, "a maximal frame is fragmentable at the default MTU");
+    CHECK(count <= (size_t)MCL_BLE_FRAG_SEQ_MODULUS,
+          "the fragment sequence does not wrap within one frame");
+
+    mcl_ble_reassembler_reset(&r);
+    for (i = 0u; i < count; ++i) {
+        CHECK(mcl_ble_fragment(frame, written, MCL_BLE_ATT_DEFAULT_MTU, i,
+                               pdu, sizeof(pdu), &produced) == MCL_BLE_OK,
+              "fragment produced");
+        CHECK(produced <= (size_t)(MCL_BLE_ATT_DEFAULT_MTU - MCL_BLE_ATT_HEADER_SIZE),
+              "fragment fits one ATT payload");
+        st = mcl_ble_reassemble(&r, pdu, produced, &done);
+        if (i + 1u < count) {
+            CHECK(st == MCL_BLE_ERR_INCOMPLETE, "intermediate fragment is incomplete");
+        }
+    }
+
+    CHECK(st == MCL_BLE_OK, "final fragment completes the frame");
+    CHECK(done == written, "reassembled length matches");
+    CHECK(memcmp(r.buffer, frame, written) == 0, "reassembled bytes are identical");
+}
+
 int main(void)
 {
     printf("MCL-BLE binding v0 tests\n");
@@ -304,6 +363,7 @@ int main(void)
     test_reassembly_rejects_orphan_and_restart();
     test_reassembly_rejects_malformed();
     test_advertisement_fit();
+    test_carries_a_maximal_link_frame();
 
     printf("\n%d checks, %d failed\n", tests_run, tests_failed);
     return (tests_failed == 0) ? 0 : 1;

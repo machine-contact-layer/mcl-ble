@@ -4,6 +4,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "mcl/link.h"   /* the carriage unit this binding fragments */
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -144,9 +146,33 @@ mcl_ble_status_t mcl_ble_fragment(
     size_t out_capacity,
     size_t *written);
 
+/* Usable payload per PDU at the smallest MTU BLE permits: 23 - 3 - 1. */
+#define MCL_BLE_MIN_PAYLOAD_PER_PDU     (MCL_BLE_ATT_DEFAULT_MTU - MCL_BLE_ATT_HEADER_SIZE - MCL_BLE_FRAG_HEADER_SIZE)
+
+/* Worst case: the largest legal Link frame at the smallest permitted MTU. */
+#define MCL_BLE_MAX_FRAGMENTS     ((MCL_LINK_FRAME_MAX_SIZE + MCL_BLE_MIN_PAYLOAD_PER_PDU - 1u)      / MCL_BLE_MIN_PAYLOAD_PER_PDU)
+
+/*
+ * The six-bit sequence must not wrap within a single frame.
+ *
+ * If it could, a receiver that missed exactly one modulus of fragments would
+ * see the sequence it expected and splice unrelated bytes into the middle of a
+ * frame. Reassembly cannot detect that, so the safety of the whole scheme rests
+ * on this inequality holding rather than on a runtime check. It is asserted at
+ * compile time so that raising the frame limit or lowering the MTU cannot break
+ * it silently.
+ */
+typedef char mcl_ble_sequence_cannot_wrap_within_a_frame[
+    (MCL_BLE_MAX_FRAGMENTS <= MCL_BLE_FRAG_SEQ_MODULUS) ? 1 : -1];
+
 /* ---------- Reassembly ---------- */
 
-#define MCL_BLE_REASSEMBLY_MAX_FRAME 1024u
+/*
+ * Sized to the largest frame Link can produce, not to a number chosen here.
+ * A bound below MCL_LINK_FRAME_MAX_SIZE would make this binding unable to
+ * carry a legal frame, and the failure would only show up on large payloads.
+ */
+#define MCL_BLE_REASSEMBLY_MAX_FRAME MCL_LINK_FRAME_MAX_SIZE
 
 typedef struct {
     uint8_t buffer[MCL_BLE_REASSEMBLY_MAX_FRAME];
