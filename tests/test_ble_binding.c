@@ -317,7 +317,7 @@ static void test_carries_a_maximal_link_frame(void)
     tx.frame_class = MCL_LINK_CLASS_DATA;
     tx.flags = (uint8_t)(MCL_LINK_FLAG_DESTINATION | MCL_LINK_FLAG_SESSION |
                          MCL_LINK_FLAG_SEQUENCE | MCL_LINK_FLAG_FRESHNESS |
-                         MCL_LINK_FLAG_INTEGRITY);
+                         MCL_LINK_FLAG_FRAME_CHECK);
     tx.source_ref = 0x01020304u;
     tx.payload = payload;
     tx.payload_len = (uint16_t)sizeof(payload);

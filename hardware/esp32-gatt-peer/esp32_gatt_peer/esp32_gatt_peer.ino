@@ -205,7 +205,7 @@ static void handle_frame(const uint8_t *frame, size_t frame_size)
 
     reply_len = build_presence_frame(g_frame_buf, sizeof(g_frame_buf),
                                      MCL_LINK_FLAG_DESTINATION | MCL_LINK_FLAG_SEQUENCE |
-                                     MCL_LINK_FLAG_INTEGRITY,
+                                     MCL_LINK_FLAG_FRAME_CHECK,
                                      MCL_LINK_CLASS_ACK, f.source_ref);
     if (reply_len > 0) {
         g_tx_sequence++;

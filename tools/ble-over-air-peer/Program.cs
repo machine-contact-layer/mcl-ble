@@ -86,7 +86,7 @@ internal static class Mcl
     internal const int ClassKeepalive = 6;
 
     internal const int FlagSequence = 0x04;
-    internal const int FlagIntegrity = 0x10;
+    internal const int FlagFrameCheck = 0x10;
 
     internal const int KindPresence = 0;
     internal const int KindHazard = 1;
@@ -313,11 +313,11 @@ internal static class Program
         int mtu = Mcl.mclx_ble_default_mtu();
 
         await ExchangeCase(rx, gate, frames, "valid CONTACT carrying PRESENCE",
-                           Mcl.ClassContact, Mcl.FlagSequence | Mcl.FlagIntegrity, 1,
+                           Mcl.ClassContact, Mcl.FlagSequence | Mcl.FlagFrameCheck, 1,
                            Mcl.KindPresence, mtu, frameMax, Mcl.ClassAck);
 
         await ExchangeCase(rx, gate, frames, "valid DATA carrying HAZARD",
-                           Mcl.ClassData, Mcl.FlagSequence | Mcl.FlagIntegrity, 2,
+                           Mcl.ClassData, Mcl.FlagSequence | Mcl.FlagFrameCheck, 2,
                            Mcl.KindHazard, mtu, frameMax, Mcl.ClassAck);
 
         await ExchangeCase(rx, gate, frames, "KEEPALIVE with no payload",
@@ -431,7 +431,7 @@ internal static class Program
         int startBit = Mcl.mclx_frag_start_bit();
         int seqMask = Mcl.mclx_frag_seq_mask();
 
-        var frame = BuildFrame(Mcl.ClassContact, Mcl.FlagSequence | Mcl.FlagIntegrity,
+        var frame = BuildFrame(Mcl.ClassContact, Mcl.FlagSequence | Mcl.FlagFrameCheck,
                                50, Mcl.KindPresence, frameMax);
         int fragments = Mcl.mclx_fragment_count(frame.Length, mtu);
         if (fragments < 2)
@@ -503,7 +503,7 @@ internal static class Program
 
         for (int i = 0; i < count; i++)
         {
-            var frame = BuildFrame(Mcl.ClassContact, Mcl.FlagSequence | Mcl.FlagIntegrity,
+            var frame = BuildFrame(Mcl.ClassContact, Mcl.FlagSequence | Mcl.FlagFrameCheck,
                                    100 + i, Mcl.KindPresence, frameMax);
             if (!await SendFragmented(rx, frame, mtu)) { continue; }
 
