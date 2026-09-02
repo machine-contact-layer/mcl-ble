@@ -39,3 +39,35 @@ freestanding target.
 ## Status
 
 Private research repository. Pre-v0.1. See [`spec/binding-v0.md`](spec/binding-v0.md).
+
+### Evidence
+
+**`E4 MULTI_DEVICE_OVER_AIR`** — 2026-09-02. Windows laptop and an ESP32-S3
+peripheral exchanged MCL Link frames over Bluetooth LE, connectionless and
+connected. 35 checks, 0 failed. Full record and limits in
+[`evidence/e4-ble-gatt-20260902/`](evidence/e4-ble-gatt-20260902/).
+
+Fragmentation was performed at MTU 23, the smallest BLE permits, rather than the
+large MTU Windows negotiates — which would have carried every test frame in one
+PDU and left the fragmentation path untested.
+
+The four reassembly refusals are the result that matters: a continuation with no
+START, a sequence gap, a START whose sequence is not zero, and that START's
+orphaned continuation were each **discarded rather than spliced**. A fifth case
+carried a frame with a corrupted frame check in well-formed fragments;
+reassembly correctly succeeded and Link refused it one layer up. Recovery was
+then asserted, because a receiver that silently wedged would otherwise look
+identical to one that refused properly.
+
+**Not** independent interoperability. Both ends run the same sources — the host
+harness calls them through a shared library rather than reimplementing framing.
+
+Reproduce with [`hardware/esp32-gatt-peer/`](hardware/esp32-gatt-peer/).
+
+### Security
+
+The run used Bluetooth "Just Works" pairing: encrypted against a passive
+listener, **unauthenticated against an active one**. A BLE connection
+establishes nothing about the peer, and a resolvable private address rotates by
+design and is never an identifier. See
+[`SECURITY.md`](https://github.com/machine-contact-layer/mcl-core/blob/main/SECURITY.md).
