@@ -23,18 +23,36 @@ static int tests_failed = 0;
     }                                                              \
 } while (0)
 
+/*
+ * The exact canonical Wire bytes of the PRESENCE object that E3 recovered over
+ * the air. Used as a real payload rather than only for its length: clang
+ * reported this array as "not needed and will not be emitted", which was
+ * accurate and worth acting on -- every use took sizeof(k_presence) and then
+ * built a synthetic ramp of that size instead. The test read as though a
+ * genuine MCL frame survived BLE fragmentation when what survived was eleven
+ * bytes of counter.
+ */
 static const uint8_t k_presence[] = {
     0x00u, 0x02u, 0x00u, 0x00u, 0x00u, 0x01u, 0x01u, 0x00u, 0x00u, 0x01u, 0x3Cu
 };
 
-static size_t build_frame(uint8_t *out, size_t capacity, size_t payload_len)
+/*
+ * Builds a Link frame around `payload_len` bytes. When `source` is non-NULL its
+ * bytes are carried verbatim; otherwise a counter ramp is used, which is the
+ * right filler for the size-driven cases where the content is irrelevant.
+ */
+static size_t build_frame_from(
+    uint8_t *out,
+    size_t capacity,
+    const uint8_t *source,
+    size_t payload_len)
 {
     static uint8_t payload[MCL_BLE_REASSEMBLY_MAX_FRAME];
     mcl_link_frame_t f;
     size_t written = 0u, i;
 
     for (i = 0u; i < payload_len; ++i) {
-        payload[i] = (uint8_t)(i & 0xFFu);
+        payload[i] = (source != NULL) ? source[i] : (uint8_t)(i & 0xFFu);
     }
 
     memset(&f, 0, sizeof(f));
@@ -47,6 +65,11 @@ static size_t build_frame(uint8_t *out, size_t capacity, size_t payload_len)
         return 0u;
     }
     return written;
+}
+
+static size_t build_frame(uint8_t *out, size_t capacity, size_t payload_len)
+{
+    return build_frame_from(out, capacity, NULL, payload_len);
 }
 
 static void test_endpoint_round_trip(void)
@@ -275,6 +298,54 @@ static void test_reassembly_rejects_malformed(void)
           "null fragment rejected");
 }
 
+/*
+ * The exact frame E3 recovered from the air, carried through BLE fragmentation
+ * and reassembly, and compared byte for byte at the end.
+ *
+ * Distinct from the size-driven round trips above: those prove the
+ * fragmentation arithmetic, this proves that a real MCL frame -- not eleven
+ * bytes that happen to be the same length -- survives the binding intact.
+ */
+static void test_carries_the_e3_presence_frame(void)
+{
+    uint8_t frame[MCL_BLE_REASSEMBLY_MAX_FRAME];
+    uint8_t pdu[512];
+    mcl_ble_reassembler_t r;
+    mcl_link_frame_t decoded;
+    size_t frame_size, count, i, written = 0u, out_size = 0u, consumed = 0u;
+    mcl_ble_status_t st = MCL_BLE_ERR_INCOMPLETE;
+
+    printf("[TEST] the E3 PRESENCE frame survives fragmentation\n");
+
+    frame_size = build_frame_from(frame, sizeof(frame), k_presence,
+                                  sizeof(k_presence));
+    CHECK(frame_size > 0u, "frame built around the real PRESENCE bytes");
+
+    count = mcl_ble_fragment_count(frame_size, MCL_BLE_ATT_DEFAULT_MTU);
+    CHECK(count > 0u, "fragment count positive");
+
+    mcl_ble_reassembler_reset(&r);
+    for (i = 0u; i < count; ++i) {
+        CHECK(mcl_ble_fragment(frame, frame_size, MCL_BLE_ATT_DEFAULT_MTU, i,
+                               pdu, sizeof(pdu), &written) == MCL_BLE_OK,
+              "fragment produced");
+        st = mcl_ble_reassemble(&r, pdu, written, &out_size);
+    }
+    CHECK(st == MCL_BLE_OK, "reassembly completed");
+    CHECK(out_size == frame_size, "reassembled length matches");
+
+    /* Decode the reassembled frame and compare its payload to the original
+     * canonical bytes, so the check is against the Wire object rather than
+     * against the framing this test produced a moment ago. */
+    CHECK(mcl_link_frame_decode(r.buffer, out_size, &decoded, &consumed) ==
+          MCL_LINK_OK, "reassembled frame decodes");
+    CHECK(consumed == out_size, "no undeclared trailing bytes");
+    CHECK(decoded.payload_len == (uint16_t)sizeof(k_presence),
+          "payload length preserved");
+    CHECK(memcmp(decoded.payload, k_presence, sizeof(k_presence)) == 0,
+          "the exact PRESENCE bytes came back");
+}
+
 static void test_advertisement_fit(void)
 {
     uint8_t frame[64];
@@ -424,6 +495,7 @@ int main(void)
     test_reassembly_rejects_gap();
     test_reassembly_rejects_orphan_and_restart();
     test_reassembly_rejects_malformed();
+    test_carries_the_e3_presence_frame();
     test_advertisement_fit();
     test_rendezvous_advertisement();
     test_carries_a_maximal_link_frame();
