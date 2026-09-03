@@ -112,7 +112,7 @@ MCLX_API int32_t mclx_build_frame(int32_t frame_class,
         obj.source_ref = source_ref;
 
         /* Field widths are the specification's, not this shim's: presence
-         * carries a 24-bit capability digest, so a wider value is refused by
+         * carries a 24-bit capability tag, so a wider value is refused by
          * the encoder rather than silently truncated here. */
         if (obj.kind == MCL_WIRE_KIND_PRESENCE) {
             obj.body.presence.machine_class = 7u;
