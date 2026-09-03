@@ -116,7 +116,7 @@ MCLX_API int32_t mclx_build_frame(int32_t frame_class,
          * the encoder rather than silently truncated here. */
         if (obj.kind == MCL_WIRE_KIND_PRESENCE) {
             obj.body.presence.machine_class = 7u;
-            obj.body.presence.capability_digest = 0x112233u;
+            obj.body.presence.capability_tag = 0x112233u;
             obj.body.presence.ttl = 60u;
         } else if (obj.kind == MCL_WIRE_KIND_HAZARD) {
             obj.body.hazard.hazard_class = 2u;
