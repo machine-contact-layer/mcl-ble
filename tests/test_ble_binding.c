@@ -350,6 +350,68 @@ static void test_carries_a_maximal_link_frame(void)
     CHECK(memcmp(r.buffer, frame, written) == 0, "reassembled bytes are identical");
 }
 
+/*
+ * Endpoint rendezvous. The AD walk is real parsing of attacker-reachable input:
+ * a scan result is whatever any nearby device chose to broadcast.
+ */
+static void test_rendezvous_advertisement(void)
+{
+    uint8_t ad[MCL_BLE_RENDEZVOUS_AD_SIZE];
+    uint8_t adv[MCL_BLE_ADV_DATA_MAX_SIZE];
+    size_t written = 0u;
+    size_t i;
+
+    CHECK(mcl_ble_rendezvous_ad_encode(0xA713224Fu, ad, sizeof(ad), &written) == MCL_BLE_OK,
+          "rendezvous AD encodes");
+    CHECK(written == MCL_BLE_RENDEZVOUS_AD_SIZE, "AD size");
+    /* Must fit advertising data alongside a 3-byte Flags structure. */
+    CHECK(MCL_BLE_RENDEZVOUS_AD_SIZE + 3u <= MCL_BLE_ADV_DATA_MAX_SIZE,
+          "AD leaves room for Flags");
+    CHECK(ad[0] == (uint8_t)(1u + 16u + 8u), "AD length counts type and payload, not itself");
+    CHECK(ad[1] == MCL_BLE_AD_TYPE_SERVICE_DATA_128, "service data 128 type");
+
+    CHECK(mcl_ble_rendezvous_ad_matches(ad, written, 0xA713224Fu) == 1u,
+          "own advertisement matches");
+    CHECK(mcl_ble_rendezvous_ad_matches(ad, written, 0xA7132250u) == 0u,
+          "another machine's token does not match");
+
+    /* Ours is not first: a real scan result carries Flags, and nothing
+     * guarantees the order of AD structures. */
+    adv[0] = 0x02u; adv[1] = 0x01u; adv[2] = 0x06u;   /* Flags */
+    for (i = 0u; i < written; ++i) { adv[3u + i] = ad[i]; }
+    CHECK(mcl_ble_rendezvous_ad_matches(adv, 3u + written, 0xA713224Fu) == 1u,
+          "matches when preceded by Flags");
+
+    /* An unrelated device's advertisement is not a match and not an error. */
+    CHECK(mcl_ble_rendezvous_ad_matches(adv, 3u, 0xA713224Fu) == 0u,
+          "Flags alone does not match");
+
+    /* A structure declaring more bytes than remain must not read past the end.
+     * This is the case a scanner is actually exposed to. */
+    adv[0] = 0x1Fu; adv[1] = MCL_BLE_AD_TYPE_SERVICE_DATA_128;
+    CHECK(mcl_ble_rendezvous_ad_matches(adv, 4u, 0xA713224Fu) == 0u,
+          "over-long AD length refused");
+
+    /* A zero length terminates advertising data; it must not loop forever. */
+    adv[0] = 0x00u;
+    CHECK(mcl_ble_rendezvous_ad_matches(adv, sizeof(adv), 0xA713224Fu) == 0u,
+          "zero AD length terminates the walk");
+
+    /* Right shape and length, wrong service UUID: another vendor's service
+     * data must never be read as an MCL beacon. */
+    for (i = 0u; i < written; ++i) { adv[i] = ad[i]; }
+    adv[2] ^= 0xFFu;
+    CHECK(mcl_ble_rendezvous_ad_matches(adv, written, 0xA713224Fu) == 0u,
+          "foreign service UUID refused");
+
+    CHECK(mcl_ble_rendezvous_ad_encode(0u, ad, sizeof(ad), &written)
+              == MCL_BLE_ERR_INVALID_ARGUMENT, "token zero refused");
+    CHECK(mcl_ble_rendezvous_ad_encode(0xA713224Fu, ad, 4u, &written)
+              == MCL_BLE_ERR_RANGE, "short buffer refused");
+    CHECK(mcl_ble_rendezvous_ad_encode(0xA713224Fu, NULL, sizeof(ad), &written)
+              == MCL_BLE_ERR_INVALID_ARGUMENT, "null buffer refused");
+}
+
 int main(void)
 {
     printf("MCL-BLE binding v0 tests\n");
@@ -363,6 +425,7 @@ int main(void)
     test_reassembly_rejects_orphan_and_restart();
     test_reassembly_rejects_malformed();
     test_advertisement_fit();
+    test_rendezvous_advertisement();
     test_carries_a_maximal_link_frame();
 
     printf("\n%d checks, %d failed\n", tests_run, tests_failed);

@@ -4,7 +4,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "mcl/link.h"   /* the carriage unit this binding fragments */
+#include "mcl/link.h"         /* the carriage unit this binding fragments */
+#include "mcl/rendezvous.h"   /* the beacon this binding places in advertising data */
 
 #ifdef __cplusplus
 extern "C" {
@@ -200,6 +201,68 @@ mcl_ble_status_t mcl_ble_reassemble(
     size_t *frame_size);
 
 /* ---------- Connectionless presence ---------- */
+
+/* ---------- Endpoint rendezvous ----------
+ *
+ * Where the transport-neutral rendezvous beacon (mcl-link/rendezvous.h) is
+ * placed in BLE: advertising Service Data for the MCL 128-bit service UUID.
+ *
+ *   AD structure:  length(1) | type 0x21 | UUID(16, little-endian) | beacon(8)
+ *                  = 26 bytes of the 31 available
+ *
+ * A 128-bit UUID is used rather than a 16-bit one because 16-bit UUIDs are
+ * allocated by the Bluetooth SIG and this project has not been assigned one.
+ * Squatting on an unassigned 16-bit value would collide with whoever is later
+ * assigned it. Manufacturer Specific Data is likewise unavailable, since it
+ * requires a company identifier we do not hold. A production deployment that
+ * holds either should define a profile that uses it and save 14 bytes; this is
+ * the form that is correct without owning an allocation.
+ *
+ * 26 bytes leaves 5, which is enough for the 3-byte Flags AD structure that
+ * most stacks insert, and not enough for much else. Advertising space is the
+ * binding's scarcest resource and this uses most of it, which is the reason
+ * addresses are NOT advertised: the scanner learns the address from the
+ * advertisement it received, not from the token.
+ */
+#define MCL_BLE_AD_TYPE_SERVICE_DATA_128 0x21u
+#define MCL_BLE_SERVICE_UUID_SIZE        16u
+
+/*
+ * MCL BLE service UUID 6d636c00-0001-4d43-4c00-6d636c626c65, in the
+ * little-endian order Bluetooth advertising data uses. The bytes spell "mcl"
+ * and "mclble" in the fixed fields, which makes an advertisement recognisable
+ * in a raw capture without a decoder.
+ */
+#define MCL_BLE_SERVICE_UUID_BYTES {     0x65u, 0x6Cu, 0x62u, 0x6Cu, 0x63u, 0x6Du, 0x00u, 0x4Cu,     0x43u, 0x4Du, 0x01u, 0x00u, 0x00u, 0x6Cu, 0x63u, 0x6Du }
+
+/* length + type + UUID + beacon. */
+#define MCL_BLE_RENDEZVOUS_AD_SIZE     (2u + MCL_BLE_SERVICE_UUID_SIZE + MCL_RENDEZVOUS_BEACON_SIZE)
+
+/*
+ * Build the complete advertising AD structure carrying a rendezvous beacon.
+ * `out` receives MCL_BLE_RENDEZVOUS_AD_SIZE bytes, ready to concatenate into
+ * advertising data.
+ */
+mcl_ble_status_t mcl_ble_rendezvous_ad_encode(
+    uint32_t endpoint_token,
+    uint8_t *out,
+    size_t out_capacity,
+    size_t *written);
+
+/*
+ * Scan-side counterpart: does this observed advertising payload contain a
+ * rendezvous beacon for `expected_token`?
+ *
+ * Takes the whole advertising data and walks its AD structures, because a real
+ * scan result contains Flags, a name and whatever else the peer advertises, in
+ * an order nothing guarantees. Returns 0 for anything that is not a match,
+ * including malformed data: a scanner sees unrelated advertisements constantly
+ * and that is not an error.
+ */
+uint8_t mcl_ble_rendezvous_ad_matches(
+    const uint8_t *adv_data,
+    size_t adv_size,
+    uint32_t expected_token);
 
 /*
  * A Link frame small enough to fit advertising data may be broadcast without a

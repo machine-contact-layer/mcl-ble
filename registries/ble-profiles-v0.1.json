@@ -1,0 +1,51 @@
+{
+  "registry_version": "0.1-draft",
+  "status": "provisional",
+  "transport_id": 3,
+  "transport_name": "MCL_BLE",
+  "transport_registry": "mcl-link/registries/transport-ids-v0.1.json",
+  "purpose": "Assigned values for the 8-bit profile_id field as it appears in TRANSPORT_OFFER and TRANSPORT_ACCEPT for the BLE binding. Profile identifiers are transport-scoped: profile 1 under BLE and profile 1 under IP are unrelated assignments and must never be compared.",
+  "why_this_exists": [
+    "Before this registry, every binding's examples used profile_id = 1 with no definition anywhere. Two implementations could agree on transport_id 3 and still be unable to talk, because one meant connectionless advertising and the other meant connected GATT with a particular MTU assumption.",
+    "A convention that fossilises is worse than an absent one: once shipping code assumes profile 1 means whatever it happens to do, the value cannot be defined later without breaking it."
+  ],
+  "allocation_policy": {
+    "0x00": "Reserved. Never assigned, so an uninitialised field names no profile.",
+    "0x01_0x3F": "MCL Standards Action",
+    "0x40_0xBF": "Specification Required",
+    "0xC0_0xEF": "Experimental Use",
+    "0xF0_0xFE": "Private Use",
+    "0xFF": "Reserved"
+  },
+  "profiles": [
+    {
+      "id": 0,
+      "name": "RESERVED",
+      "status": "reserved",
+      "detail": "Permanently reserved. An offer carrying profile_id 0 is malformed."
+    },
+    {
+      "id": 192,
+      "name": "BLE-X0-GATT-EXPERIMENTAL",
+      "status": "experimental",
+      "range": "Experimental Use",
+      "detail": "Connected GATT carriage: one MCL Link frame per write, fragmented per mcl-ble when the frame exceeds the negotiated ATT payload. Fragmentation is exercised at the 23-byte minimum ATT MTU rather than the larger MTU a host may negotiate, because the minimum is the only value every peer must support. Rendezvous beacon in advertising Service Data for the MCL 128-bit service UUID.",
+      "evidence": "mcl-ble/evidence/e4-ble-gatt-20260902/ demonstrated this carriage between two machines. That is transport evidence, not a conformance pass: no normative profile exists to conform to.",
+      "promotion_gate": "May be proposed for a Standards Action assignment once a second independent implementation has interoperated with it and the parameters below are fixed by specification rather than by the reference implementation."
+    },
+    {
+      "id": 193,
+      "name": "BLE-X1-CONNECTIONLESS-EXPERIMENTAL",
+      "status": "experimental",
+      "range": "Experimental Use",
+      "detail": "Connectionless carriage: a Link frame small enough for the 31-byte advertising payload is broadcast without a connection. Suitable for presence and hazard, which have no addressee. No fragmentation, so a frame that does not fit is not sendable under this profile.",
+      "evidence": "The same evidence record decoded a 19-byte Tier-0 PRESENCE Link frame from a scan response.",
+      "promotion_gate": "As above."
+    }
+  ],
+  "notes": [
+    "Experimental Use values were chosen deliberately over 1 and 2. These profiles are defined by reference-implementation behaviour rather than by specification, and an Experimental assignment says so in the value itself. Taking a Standards Action value now would freeze exactly the decision this project's governing rule says to defer: freeze only what future implementers must agree on.",
+    "A profile_id says nothing about security. A BLE link with a completed pairing is not an authenticated peer; see mcl-core/SECURITY.md.",
+    "An implementation receiving an unassigned profile_id MUST NOT guess. It refuses the offer and may continue on its current transport."
+  ]
+}

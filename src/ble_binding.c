@@ -272,3 +272,107 @@ uint8_t mcl_ble_fits_advertisement(size_t frame_size)
     return (frame_size != 0u && frame_size <= (size_t)MCL_BLE_ADV_DATA_MAX_SIZE)
          ? 1u : 0u;
 }
+
+/* ---------- Endpoint rendezvous ---------- */
+
+mcl_ble_status_t mcl_ble_rendezvous_ad_encode(
+    uint32_t endpoint_token,
+    uint8_t *out,
+    size_t out_capacity,
+    size_t *written)
+{
+    static const uint8_t uuid[MCL_BLE_SERVICE_UUID_SIZE] = MCL_BLE_SERVICE_UUID_BYTES;
+    volatile uint8_t *dst;
+    size_t beacon_written = 0u;
+    mcl_link_status_t lst;
+    unsigned i;
+
+    if (out == NULL || written == NULL) {
+        return MCL_BLE_ERR_INVALID_ARGUMENT;
+    }
+    if (out_capacity < MCL_BLE_RENDEZVOUS_AD_SIZE) {
+        return MCL_BLE_ERR_RANGE;
+    }
+
+    dst = (volatile uint8_t *)out;
+    /* AD length counts the type byte and everything after it, not itself. */
+    dst[0] = (uint8_t)(1u + MCL_BLE_SERVICE_UUID_SIZE + MCL_RENDEZVOUS_BEACON_SIZE);
+    dst[1] = MCL_BLE_AD_TYPE_SERVICE_DATA_128;
+    for (i = 0u; i < MCL_BLE_SERVICE_UUID_SIZE; ++i) {
+        dst[2u + i] = uuid[i];
+    }
+
+    lst = mcl_rendezvous_beacon_encode(
+        MCL_BLE_TRANSPORT_ID, endpoint_token,
+        out + 2u + MCL_BLE_SERVICE_UUID_SIZE,
+        out_capacity - 2u - MCL_BLE_SERVICE_UUID_SIZE,
+        &beacon_written);
+    if (lst != MCL_LINK_OK) {
+        return (lst == MCL_LINK_ERR_INVALID_ARGUMENT)
+            ? MCL_BLE_ERR_INVALID_ARGUMENT
+            : MCL_BLE_ERR_RANGE;
+    }
+
+    *written = MCL_BLE_RENDEZVOUS_AD_SIZE;
+    return MCL_BLE_OK;
+}
+
+uint8_t mcl_ble_rendezvous_ad_matches(
+    const uint8_t *adv_data,
+    size_t adv_size,
+    uint32_t expected_token)
+{
+    static const uint8_t uuid[MCL_BLE_SERVICE_UUID_SIZE] = MCL_BLE_SERVICE_UUID_BYTES;
+    size_t pos = 0u;
+
+    if (adv_data == NULL) {
+        return 0u;
+    }
+
+    /*
+     * Walk the AD structures rather than assuming ours is first. A real scan
+     * result carries Flags, possibly a name, and whatever else the peer chose,
+     * in an order nothing guarantees.
+     */
+    while (pos < adv_size) {
+        const uint8_t ad_len = adv_data[pos];
+        size_t payload_pos;
+        size_t payload_len;
+        unsigned i;
+        int uuid_differs = 0;
+
+        if (ad_len == 0u) {
+            /* Zero length terminates advertising data by convention, and would
+             * otherwise loop forever. */
+            return 0u;
+        }
+        if ((size_t)ad_len > (adv_size - pos - 1u)) {
+            /* Declared longer than the buffer: malformed, so stop rather than
+             * read past the end. */
+            return 0u;
+        }
+
+        payload_pos = pos + 2u;          /* past length and type */
+        payload_len = (size_t)ad_len - 1u;
+
+        if (adv_data[pos + 1u] == MCL_BLE_AD_TYPE_SERVICE_DATA_128 &&
+            payload_len == (size_t)(MCL_BLE_SERVICE_UUID_SIZE + MCL_RENDEZVOUS_BEACON_SIZE)) {
+            for (i = 0u; i < MCL_BLE_SERVICE_UUID_SIZE; ++i) {
+                if (adv_data[payload_pos + i] != uuid[i]) {
+                    uuid_differs = 1;
+                }
+            }
+            if (uuid_differs == 0) {
+                return mcl_rendezvous_beacon_matches(
+                    adv_data + payload_pos + MCL_BLE_SERVICE_UUID_SIZE,
+                    MCL_RENDEZVOUS_BEACON_SIZE,
+                    MCL_BLE_TRANSPORT_ID,
+                    expected_token);
+            }
+        }
+
+        pos += (size_t)ad_len + 1u;
+    }
+
+    return 0u;
+}
