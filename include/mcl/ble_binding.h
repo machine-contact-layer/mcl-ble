@@ -200,6 +200,34 @@ mcl_ble_status_t mcl_ble_reassemble(
     size_t fragment_size,
     size_t *frame_size);
 
+/*
+ * Profile conformance check for a reassembled frame.
+ *
+ * spec/ble-gatt-profile-v1.md section 6. Run this on the bytes the
+ * reassembler produced, BEFORE handing them to Link.
+ *
+ * WHY THE FRAME CHECK IS REQUIRED HERE
+ *
+ * BLE's link layer already has a 24-bit CRC and connected GATT is acknowledged
+ * and retransmitted, so radio corruption reaching this layer is unlikely. The
+ * risk is not the radio -- it is the REASSEMBLY. A frame is split across up to
+ * 56 PDUs, each individually protected by the link-layer CRC and each
+ * individually correct; a lost, duplicated, reordered or mis-spliced FRAGMENT
+ * produces a corrupt frame out of perfectly valid PDUs, and no amount of
+ * link-layer integrity can see that. The fragment sequence catches most of it.
+ * The frame check is what catches the rest.
+ *
+ * Checked after reassembly, over the whole frame. Checking per fragment would
+ * re-verify what the link layer already verified and miss the only failure mode
+ * that matters.
+ *
+ * It is a CRC: accidental corruption only, not integrity in the security sense.
+ * Anyone who can write to the medium can recompute it.
+ */
+mcl_ble_status_t mcl_ble_frame_validate(
+    const uint8_t *frame,
+    size_t frame_size);
+
 /* ---------- Connectionless presence ---------- */
 
 /* ---------- Endpoint rendezvous ----------

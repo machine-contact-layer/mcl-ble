@@ -346,6 +346,58 @@ static void test_carries_the_e3_presence_frame(void)
           "the exact PRESENCE bytes came back");
 }
 
+/*
+ * The profile requires a frame check; Link only verifies one that is present.
+ *
+ * On this transport the reason is reassembly, not the radio: a frame crosses up
+ * to 56 PDUs, each individually correct under the link-layer CRC, and a
+ * mis-spliced fragment produces a corrupt frame out of valid PDUs.
+ */
+static void test_profile_requires_frame_check(void)
+{
+    mcl_link_frame_t f;
+    uint8_t unchecked[128];
+    uint8_t checked[128];
+    size_t unchecked_size = 0u;
+    size_t checked_size = 0u;
+
+    printf("[TEST] BLE-GATT v1 requires a frame check, not merely a valid one\n");
+
+    memset(&f, 0, sizeof(f));
+    f.frame_class = MCL_LINK_CLASS_DATA;
+    f.source_ref = 0x0B1Eu;
+    f.payload = k_presence;
+    f.payload_len = (uint16_t)sizeof(k_presence);
+    /* No FRAME_CHECK flag. */
+    CHECK(mcl_link_frame_encode(&f, unchecked, sizeof(unchecked),
+                                &unchecked_size) == MCL_LINK_OK,
+          "a frame without a check is a legal LINK frame");
+    CHECK(mcl_ble_frame_validate(unchecked, unchecked_size) !=
+              MCL_BLE_OK,
+          "but this profile refuses it");
+
+    f.flags = MCL_LINK_FLAG_FRAME_CHECK;
+    CHECK(mcl_link_frame_encode(&f, checked, sizeof(checked),
+                                &checked_size) == MCL_LINK_OK,
+          "the same frame with a check encodes");
+    CHECK(mcl_ble_frame_validate(checked, checked_size) == MCL_BLE_OK,
+          "and is accepted, so the refusal was about the missing check");
+
+    /* Requiring one did not stop it being verified. */
+    checked[checked_size - 1u] ^= 0x01u;
+    CHECK(mcl_ble_frame_validate(checked, checked_size) != MCL_BLE_OK,
+          "a corrupted frame check is still refused");
+
+    /* Spliced input: valid frame plus trailing bytes from another. */
+    checked[checked_size - 1u] ^= 0x01u;
+    CHECK(mcl_ble_frame_validate(checked, checked_size + 1u) != MCL_BLE_OK,
+          "reassembled bytes beyond the frame are refused, never ignored");
+
+    CHECK(mcl_ble_frame_validate(NULL, checked_size) ==
+              MCL_BLE_ERR_INVALID_ARGUMENT,
+          "null frame rejected");
+}
+
 static void test_advertisement_fit(void)
 {
     uint8_t frame[64];
@@ -496,6 +548,7 @@ int main(void)
     test_reassembly_rejects_orphan_and_restart();
     test_reassembly_rejects_malformed();
     test_carries_the_e3_presence_frame();
+    test_profile_requires_frame_check();
     test_advertisement_fit();
     test_rendezvous_advertisement();
     test_carries_a_maximal_link_frame();

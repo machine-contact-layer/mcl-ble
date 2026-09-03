@@ -267,6 +267,64 @@ mcl_ble_status_t mcl_ble_reassemble(
     return MCL_BLE_ERR_INCOMPLETE;
 }
 
+/*
+ * Link statuses that survive into this binding's vocabulary.
+ *
+ * TRUNCATED is kept distinct because on a fragmented carriage it is actionable
+ * -- more fragments may be coming -- while everything else means the bytes are
+ * not a frame this profile accepts.
+ */
+static mcl_ble_status_t mcl_ble_translate_link_status(mcl_link_status_t st)
+{
+    switch (st) {
+    case MCL_LINK_ERR_TRUNCATED:
+        return MCL_BLE_ERR_TRUNCATED;
+    case MCL_LINK_ERR_INVALID_ARGUMENT:
+        return MCL_BLE_ERR_INVALID_ARGUMENT;
+    default:
+        /* Unknown class, reserved bits set, oversize payload, failed frame
+         * check, unsupported major. */
+        return MCL_BLE_ERR_NONCANONICAL;
+    }
+}
+
+mcl_ble_status_t mcl_ble_frame_validate(
+    const uint8_t *frame,
+    size_t frame_size)
+{
+    mcl_link_frame_t decoded;
+    size_t consumed = 0u;
+    mcl_link_status_t lst;
+
+    if (frame == NULL) {
+        return MCL_BLE_ERR_INVALID_ARGUMENT;
+    }
+
+    lst = mcl_link_frame_decode(frame, frame_size, &decoded, &consumed);
+    if (lst != MCL_LINK_OK) {
+        return mcl_ble_translate_link_status(lst);
+    }
+    if (consumed != frame_size) {
+        /* Reassembly produced more bytes than the frame declares. One PDU
+         * never spans two frames, so this is spliced input. */
+        return MCL_BLE_ERR_REASSEMBLY;
+    }
+    if ((decoded.flags & MCL_LINK_FLAG_FRAME_CHECK) == 0u) {
+        /*
+         * Required by the profile; see the contract in ble_binding.h.
+         *
+         * mcl_link_frame_decode verifies the CRC when the flag is set but does
+         * not require the flag. Without this, a frame carrying no check at all
+         * would be accepted while a frame carrying a WRONG one was refused --
+         * rewarding its omission, on the transport where reassembly can corrupt
+         * a frame that every individual PDU delivered correctly.
+         */
+        return MCL_BLE_ERR_REASSEMBLY;
+    }
+
+    return MCL_BLE_OK;
+}
+
 uint8_t mcl_ble_fits_advertisement(size_t frame_size)
 {
     return (frame_size != 0u && frame_size <= (size_t)MCL_BLE_ADV_DATA_MAX_SIZE)
