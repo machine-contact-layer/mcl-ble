@@ -33,12 +33,27 @@ freestanding target.
 - `src/ble_binding.c` — implementation
 - `tests/test_ble_binding.c` — round trips and the negative cases
 
-**Status: Research Draft.** Nothing here is frozen. Assigned transport id
-`0x03` is provisional until Candidate Specification maturity.
-
 ## Status
 
-Private research repository. Pre-v0.1. See [`spec/binding-v0.md`](spec/binding-v0.md).
+**Not one status. Two, and they are deliberately different.**
+
+| | Status |
+|---|---|
+| `transport_id = 3` (`MCL_BLE`) | **Stable.** MCL Standards Action, 2026-09-04. Frozen; the record is in [`mcl-link/registries/transport-ids-v0.1.json`](../mcl-link/registries/transport-ids-v0.1.json). |
+| [`spec/ble-gatt-profile-v1.md`](spec/ble-gatt-profile-v1.md) — `profile_id = 1` | **Stable.** MCL Standards Action, 2026-09-04. Connected GATT carriage with the fragmentation and reassembly rules fixed by the document. |
+| [`spec/binding-v0.md`](spec/binding-v0.md) | **Research Draft.** The wider binding — connectionless advertising carriage in particular — is not frozen and is not a basis for an implementation. |
+| `profile_id = 192` | **Experimental Use, permanently.** It was never relabelled: profile 1 is a separate assignment. Evidence gathered under 192 stays evidence about 192. |
+
+So: the GATT profile is safe to build against and the rest of this repository is
+not. If you need a single sentence — **what v1.0 freezes here is one profile
+under one transport identifier, and nothing else.**
+
+A transport that usually offers link encryption is still not an authenticated
+peer. `transport_id = 3` says nothing about security (Architecture Charter
+2.11), and this binding performs no pairing, no bonding and no key exchange.
+
+The reference implementation is C99, freestanding, and contains **no Bluetooth
+stack**, so nothing here opens a connection for you.
 
 ### Evidence
 
