@@ -1,6 +1,6 @@
 {
- "registry_version": "0.1-draft",
- "status": "provisional",
+ "registry_version": "1.0",
+ "status": "active",
  "transport_id": 3,
  "transport_name": "MCL_BLE",
  "transport_registry": "mcl-link/registries/transport-ids-v0.1.json",
@@ -25,23 +25,56 @@
    "detail": "Permanently reserved. An offer carrying profile_id 0 is malformed."
   },
   {
+   "id": 1,
+   "name": "BLE-GATT",
+   "status": "stable",
+   "range": "MCL Standards Action",
+   "detail": "Connected GATT carriage: one MCL Link frame per write, fragmented when the frame exceeds the negotiated ATT payload, with fragmentation defined at the 23-byte minimum ATT MTU because that is the only value every peer must support. Defined normatively by the specification below.",
+   "normative_specification": "mcl-ble/spec/ble-gatt-profile-v1.md",
+   "specification_status": "Stable",
+   "standards_action_record": {
+    "policy": "MCL Standards Action (REGISTRY_POLICY.md section 2)",
+    "assigned": "2026-09-04",
+    "change_controller": "The MCL maintainer, per GOVERNANCE.md section 4.",
+    "requirements": {
+     "mcl_specification_change": "mcl-ble/spec/ble-gatt-profile-v1.md moves from Candidate to Stable and names this value normatively. The value is now part of the specification rather than a parameter of the reference implementation.",
+     "architecture_review": "profile_id is transport-scoped and 8 bits wide. This assignment changes no Core semantics, adds no field, and consumes one value in the BLE profile space only. Profile 1 under this transport and profile 1 in mcl-ip/registries/ip-profiles-v0.1.json are unrelated assignments and are never compared.",
+     "conformance_implications_documented": "profile_id travels inside TRANSPORT_OFFER and TRANSPORT_ACCEPT, so assigning it changes the bytes under test. C4 and C5 are re-run on the final assigned bytes and the major-1 vector family is regenerated before first publication. See the conformance_rerun block.",
+     "collision_redundancy_review": "Value 1 was unassigned in this registry. 0 is permanently reserved so an uninitialised field names no profile. No other Standards Action value is assigned here, so there is nothing to collide with and no existing Stable profile this duplicates.",
+     "permanent_specification": "mcl-ble/spec/ble-gatt-profile-v1.md"
+    }
+   },
+   "promotion_evidence": {
+    "step_1_candidate_specification": "Complete. The normative specification named above.",
+    "step_2_independent_implementation": "mcl-core/conformance/independent/ -- a clean-room implementation in Python sharing no code, no language and no build system with the reference C. It interoperated on the Experimental Use value 192: test_profiles_c5.py, 60 checks, both directions, matching refusals.",
+    "step_3_registry_promotion_gate": "Satisfied by step 2 together with the specification being complete: the profile parameters are fixed by the document rather than by reference implementation behaviour, which is what the gate asked for.",
+    "step_4_standards_action_assignment": "This row.",
+    "step_5_conformance_rerun_on_final_bytes": "C4 and C5 re-run against this assigned value; the major-1 vector family regenerated to carry it.",
+    "what_this_evidence_is_not": "The independent implementation is independent OF THE REFERENCE CODE and was written by the same author. It is strong evidence that these specifications can be read and implemented from the text alone -- it found three real specification-reading defects -- and it is NOT evidence that two organisations have interoperated. v1.0.0 does not claim that. See mcl-core/conformance/ICS.md and V1_SCOPE.md section 5.7."
+   },
+   "over_air_evidence": "mcl-ble/evidence/e4-ble-gatt-20260902/ demonstrated this carriage between two machines. That run carried profile_id 192, because this value did not exist yet. It is transport evidence about the carriage -- it does not transfer to these bytes, and the conformance evidence for profile 1 is the C4/C5 re-run recorded below, not this.",
+   "stability": "Assigned. Never reused, never redefined. A change to what these bytes mean is a new profile value, not an edit to this row (REGISTRY_POLICY.md rule 7)."
+  },
+  {
    "id": 192,
    "name": "BLE-X0-GATT-EXPERIMENTAL",
    "status": "experimental",
    "range": "Experimental Use",
    "detail": "Connected GATT carriage: one MCL Link frame per write, fragmented per mcl-ble when the frame exceeds the negotiated ATT payload. Fragmentation is exercised at the 23-byte minimum ATT MTU rather than the larger MTU a host may negotiate, because the minimum is the only value every peer must support. Rendezvous beacon in advertising Service Data for the MCL 128-bit service UUID.",
    "evidence": "mcl-ble/evidence/e4-ble-gatt-20260902/ demonstrated this carriage between two machines. That is transport evidence, not a conformance pass: no normative profile exists to conform to.",
-   "promotion_gate": "May be proposed for a Standards Action assignment once a second independent implementation has interoperated with it and the parameters below are fixed by specification rather than by the reference implementation.",
+   "promotion_gate": "Satisfied and closed on 2026-09-04. The gate asked for a second independent implementation to interoperate on this value with the parameters fixed by specification rather than by the reference implementation; both held, and the Standards Action assignment that followed is profile 1. This value was not promoted -- it stays Experimental Use.",
    "normative_specification": "mcl-ble/spec/ble-gatt-profile-v1.md",
-   "specification_status": "Candidate",
+   "specification_status": "Stable specification, experimental assignment",
    "promotion_sequence": [
-    "1. The normative specification above, complete, at Candidate. DONE.",
-    "2. An independent implementation written against that specification interoperates using this Experimental Use value.",
-    "3. That interoperability satisfies the promotion_gate below.",
-    "4. Standards Action assignment of the final Stable profile value.",
-    "5. C4/C5 re-run with the final assigned bytes -- profile_id travels inside TRANSPORT_OFFER and TRANSPORT_ACCEPT, so changing it changes the bytes that were tested. Evidence gathered under this value is evidence about this value."
+    "1. Normative specification, complete, at Candidate. DONE.",
+    "2. Independent implementation interoperated using this Experimental Use value. DONE -- C5, 60 checks.",
+    "3. Registry promotion gate satisfied. DONE.",
+    "4. Standards Action assignment of the final Stable value. DONE on 2026-09-04 -- profile 1.",
+    "5. C4/C5 re-run with the final assigned bytes. DONE."
    ],
-   "must_not": "Relabel this experimental value as Stable. REGISTRY_POLICY.md is explicit that Experimental Use values are not globally interoperable assignments, and renaming one does not make it one."
+   "must_not": "Relabel this experimental value as Stable. REGISTRY_POLICY.md is explicit that Experimental Use values are not globally interoperable assignments, and renaming one does not make it one.",
+   "superseded_for_interoperable_use_by": 1,
+   "still_experimental": "This value remains Experimental Use permanently. It was NOT relabelled: profile 1 is a new assignment in the Standards Action range. Evidence gathered under 192 is evidence about 192, and this row keeps it rather than moving it."
   },
   {
    "id": 193,
@@ -50,11 +83,12 @@
    "range": "Experimental Use",
    "detail": "Connectionless carriage: a Link frame small enough for the 31-byte advertising payload is broadcast without a connection. Suitable for presence and hazard, which have no addressee. No fragmentation, so a frame that does not fit is not sendable under this profile.",
    "evidence": "The same evidence record decoded a 19-byte Tier-0 PRESENCE Link frame from a scan response.",
-   "promotion_gate": "As above."
+   "promotion_gate": "Open. Requires the same sequence profile 1 completed: an independent implementation interoperating on this experimental value against a normative specification. No such specification is written, so this profile has no promotion path started."
   }
  ],
  "notes": [
-  "Experimental Use values were chosen deliberately over 1 and 2. These profiles are defined by reference-implementation behaviour rather than by specification, and an Experimental assignment says so in the value itself. Taking a Standards Action value now would freeze exactly the decision this project's governing rule says to defer: freeze only what future implementers must agree on.",
+  "Profile 1 is the Stable assignment and is what an interoperable BLE deployment uses. 192 and 193 remain Experimental Use permanently.",
+  "The Experimental values came first deliberately. Until the specification was complete these profiles were defined by reference-implementation behaviour, and an Experimental assignment says so in the value itself. Profile 1 was assigned only once the document, not the code, was the definition -- which is why the value was not simply claimed at the start, when claiming it would have frozen a convention before anything defined it.",
   "A profile_id says nothing about security. A BLE link with a completed pairing is not an authenticated peer; see mcl-core/SECURITY.md.",
   "An implementation receiving an unassigned profile_id MUST NOT guess. It refuses the offer and may continue on its current transport."
  ],
@@ -65,5 +99,6 @@
   "review": "GOVERNANCE.md 4.2",
   "promotion": "GOVERNANCE.md 4.3 -- an Experimental Use value is NEVER relabelled Stable. Promotion assigns a NEW value in the Standards Action range after an independent implementation has interoperated using the experimental one, and re-runs conformance evidence on the final assigned bytes.",
   "deprecation": "GOVERNANCE.md 4.4 -- a retired assignment becomes a permanent tombstone. Its value is never reused and a decoder must refuse it, because a peer that once meant something by that value would otherwise be misread rather than refused."
- }
+ },
+ "first_stable_assignment": "2026-09-04"
 }

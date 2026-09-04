@@ -1,8 +1,8 @@
 # MCL BLE-GATT profile v1
 
-Status: **Candidate**
+Status: **Stable**
 Transport: `MCL_BLE`, `transport_id = 3`
-Profile identifier: **not yet assigned** — see §10
+Profile identifier: **`profile_id = 1`, `BLE-GATT`** — MCL Standards Action, assigned 2026-09-04. See §10.
 Satisfies: `mcl-core/governance/V1_SCOPE.md` §5.6, release gate item 8
 
 ## 0. What this document is
@@ -13,7 +13,9 @@ whose parameters are defined by a reference implementation cannot be
 implemented independently — and independent implementation is what v1.0 must
 demonstrate.
 
-Published at **Candidate** for the sequencing reason given in §10.
+It was published at Candidate first and is now **Stable**, with the profile
+identifier assigned. §10 records the completed sequence and the evidence at each
+step.
 
 ## 1. Scope
 
@@ -232,23 +234,47 @@ in range          != trusted
 A BLE connection is a carriage. `reception != identity != authenticity !=
 authority != trust != obligation` holds here exactly as everywhere else in MCL.
 
-## 10. Where this profile sits in the promotion sequence
+## 10. The assigned identifier, and how it was assigned
+
+> **`profile_id = 1` names this profile under `transport_id = 3`.**
+
+A `BLE` `TRANSPORT_OFFER` or `TRANSPORT_ACCEPT` carrying `profile_id = 1` offers
+or accepts the carriage defined in this document, and nothing else. Profile
+identifiers are transport-scoped: profile 1 under BLE and profile 1 under IP are
+unrelated assignments and MUST NOT be compared. That is not a pedantic
+restatement — before the registries existed, every binding's examples used
+`profile_id = 1` with no definition anywhere, which is exactly the collision
+this scoping rule prevents.
+
+The five-step sequence in `GOVERNANCE.md` §4.3 is complete:
 
 ```text
-1. This document, normative and complete, at Candidate          <-- HERE
+1. This document, normative and complete, at Candidate            DONE
 2. Independent implementation written against THIS document,
-   interoperating using the Experimental Use profile value 192
-3. That interoperability satisfies the registry promotion gate
-4. Standards Action assignment of the final Stable profile value
-5. C4/C5 re-run with the final assigned bytes
+   interoperating using the Experimental Use profile value 192    DONE  C5, 60 checks
+3. That interoperability satisfies the registry promotion gate    DONE
+4. Standards Action assignment of the final Stable profile value  DONE  profile 1, 2026-09-04
+5. C4/C5 re-run with the final assigned bytes                     DONE
 ```
 
-Step 5 is not ceremony: `profile_id` travels inside `TRANSPORT_OFFER` and
-`TRANSPORT_ACCEPT`, so changing it changes the bytes that were tested. Evidence
-gathered under profile 192 is evidence about profile 192.
+Step 5 was not ceremony: `profile_id` travels inside `TRANSPORT_OFFER` and
+`TRANSPORT_ACCEPT`, so assigning it changed the bytes under test. The C5 run
+supporting this profile is the one carrying `profile_id = 1`.
 
-**Profile 192 MUST NOT be relabelled Stable.** Experimental Use values are not
-globally interoperable assignments, and renaming one does not make it one.
+**Profile 192 was not relabelled.** It remains Experimental Use permanently.
+Promotion assigned a *new* value in the Standards Action range rather than
+changing the status of an old one.
+
+### What step 2's independence was, and was not
+
+The implementation that interoperated in step 2 shares no code, no language and
+no build system with the reference C, and it found three real
+specification-reading defects. That is evidence this text can be implemented
+**from the text alone**.
+
+It was written by the same author, so it is *not* evidence that two
+organisations have interoperated, and this assignment does not claim that.
+`mcl-core/conformance/ICS.md` states the same boundary.
 
 ## 11. What this profile does not provide
 
