@@ -57,5 +57,13 @@
   "Experimental Use values were chosen deliberately over 1 and 2. These profiles are defined by reference-implementation behaviour rather than by specification, and an Experimental assignment says so in the value itself. Taking a Standards Action value now would freeze exactly the decision this project's governing rule says to defer: freeze only what future implementers must agree on.",
   "A profile_id says nothing about security. A BLE link with a completed pairing is not an authenticated peer; see mcl-core/SECURITY.md.",
   "An implementation receiving an unassigned profile_id MUST NOT guess. It refuses the offer and may continue on its current transport."
- ]
+ ],
+ "governance": {
+  "change_controller": "The MCL maintainer (the owner of the eight MCL repositories).",
+  "procedures": "mcl-core/governance/GOVERNANCE.md section 4 defines application, review, promotion and deprecation for every MCL registry. They are defined once there rather than restated per registry, so they cannot drift apart.",
+  "application": "GOVERNANCE.md 4.1 -- an issue naming the registry, requested range, meaning, a permanent specification reference, and the failure behaviour required of a receiver that does not implement it. An application without a specification reference is not an application.",
+  "review": "GOVERNANCE.md 4.2",
+  "promotion": "GOVERNANCE.md 4.3 -- an Experimental Use value is NEVER relabelled Stable. Promotion assigns a NEW value in the Standards Action range after an independent implementation has interoperated using the experimental one, and re-runs conformance evidence on the final assigned bytes.",
+  "deprecation": "GOVERNANCE.md 4.4 -- a retired assignment becomes a permanent tombstone. Its value is never reused and a decoder must refuse it, because a peer that once meant something by that value would otherwise be misread rather than refused."
+ }
 }
