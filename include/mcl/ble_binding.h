@@ -5,7 +5,7 @@
 #include <stdint.h>
 
 #include "mcl/link.h"         /* the carriage unit this binding fragments */
-#include "mcl/rendezvous.h"   /* the beacon this binding places in advertising data */
+#include "mcl/endpoint_rendezvous.h"   /* the beacon this binding places in advertising data */
 
 #ifdef __cplusplus
 extern "C" {

@@ -1,0 +1,66 @@
+BLE-ACTIVATE-1 / BLE-GATT-1 host probe against the DFR1154 autonomous node
+2026-09-07
+
+PEER      DFR1154 (FireBeetle 2 ESP32-S3), scenario 4 (BLE advertise diagnostic)
+FIRMWARE  919110FC97FF942A77422534BA4BED33386232EB9DCFC3500769E47C2893BA69
+HOST      Windows, MediaTek Bluetooth adapter, python bleak (WinRT backend)
+TOKEN     0xA5C30F17, the firmware's compiled-in diagnostic constant
+
+--- scan -------------------------------------------------------------------
+
+$ python ble_probe.py scan --token 0xA5C30F17 --seconds 12
+
+  E8:F6:0A:86:7B:D9  rssi=-40
+    service data      00000000A5C30F17  (8 bytes)
+    length is 8       yes
+    upper 4 bytes 0   yes
+    endpoint_token    0xa5c30f17
+    matches wanted    YES
+
+1 MCL advertiser(s)
+
+The Service Data structure for the MCL 128-bit UUID is present, is exactly
+eight bytes, and carries the endpoint_token zero-extended and big-endian, which
+is BLE-ACTIVATE-1 section 3 byte for byte. A stack that shares no code with the
+firmware parsed it.
+
+--- connect ----------------------------------------------------------------
+
+$ python ble_probe.py connect --token 0xA5C30F17 --seconds 15 --wait 5
+
+scanning 15.0s for a connectable MCL advertiser
+found E8:F6:0A:86:7B:D9
+connected: True
+  MCL-RX present properties=['write-without-response', 'write']
+  MCL-TX present properties=['notify']
+writing 40 bytes as 3 fragment(s) at the minimum MTU
+  reassembled 40 bytes: 0102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F202122232425262728
+frames received back: 1
+
+40 bytes needs three fragments at the 23-byte minimum MTU, so the START, middle
+and END cases were all exercised, in both directions: the host fragmented and
+the board reassembled, then the board fragmented and the host reassembled. The
+bytes came back identical.
+
+--- the board's own log ----------------------------------------------------
+
+MCLAUTO phase QUIESCE free_heap=87840
+MCLAUTO phase ACTIVATE free_heap=87840
+MCLAUTO BLE up free_heap=16124 largest=8180
+MCLAUTO BLE advertising token=A5C30F17 beacon=00000000A5C30F17
+MCLAUTO ble diagnostic advertise up free_heap=12116 largest=7668
+MCLAUTO diag frame in 40 bytes 01020304...
+MCLAUTO diag echo rc=0
+
+THE NUMBER THAT MATTERED. The board advertised, accepted a connection, received
+three fragments, reassembled a frame and notified three fragments back with
+12 116 bytes of free heap and a largest block of 7 668. The memory spike had
+left this as the open question -- BLE fits, but "TIGHT" -- and a connection at
+this operating point is now measured rather than hoped for.
+
+--- what this does NOT establish -------------------------------------------
+
+Independent interoperability. The probe was written by the same author, from
+the same documents, as the firmware it probes. It shares no source, which makes
+it useful for catching an encoder that disagrees with its own specification; it
+cannot catch a specification both halves misread the same way.
