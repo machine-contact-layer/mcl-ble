@@ -173,6 +173,9 @@ async def cmd_scan(args):
 
 
 async def cmd_connect(args):
+    if args.token == 0:
+        print("REFUSED: BLE-ACTIVATE-1 forbids a zero endpoint token")
+        return 1
     want = beacon_for(args.token) if args.token is not None else None
     print(f"scanning {args.seconds}s for a connectable MCL advertiser")
 
@@ -194,11 +197,13 @@ async def cmd_connect(args):
 
     reasm = Reassembler()
     received = []
+    rejected = []
 
     def on_notify(_char, data: bytearray):
         try:
             frame = reasm.push(bytes(data))
         except ValueError as exc:
+            rejected.append(str(exc))
             print(f"  notify REFUSED: {exc}")
             return
         if frame is not None:
@@ -234,13 +239,18 @@ async def cmd_connect(args):
         print(f"writing {len(payload)} bytes as {len(frags)} fragment(s) "
               f"at the minimum MTU")
         for f in frags:
-            await client.write_gatt_char(rx, f, response=False)
+            await client.write_gatt_char(
+                rx, f, response="write-without-response" not in rx.properties)
             await asyncio.sleep(0.02)
 
         await asyncio.sleep(args.wait)
         await client.stop_notify(tx)
 
     print(f"frames received back: {len(received)}")
+    if rejected or received != [payload]:
+        print("FAIL: expected exactly one byte-identical echo and no rejected fragments")
+        return 1
+    print("PASS: exact byte-for-byte round trip")
     return 0
 
 

@@ -33,6 +33,12 @@ accepts writes and an **MCL-TX** that notifies, and that a frame written as
 The default payload is 40 bytes, which needs three fragments, so START, middle
 and END are all exercised rather than only the single-PDU case.
 
+The command succeeds only for exactly one byte-identical echo and no rejected
+notification fragments. Silence, corruption, duplicate echoes and a rejected
+fragment followed by a valid echo all fail. This verdict is covered by
+`python -m unittest discover -s . -p test_ble_probe.py`; those simulated tests
+do not count as radio evidence.
+
 The reassembler here refuses a fragment whose sequence is not the expected
 successor, as §3.2 requires. That rule is what stops one dropped packet turning
 into a corrupt semantic object, and a probe that spliced quietly would be a

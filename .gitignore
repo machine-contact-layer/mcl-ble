@@ -9,3 +9,4 @@ tools/ble-over-air-peer/obj/
 # CMake build trees
 build/
 out/
+__pycache__/

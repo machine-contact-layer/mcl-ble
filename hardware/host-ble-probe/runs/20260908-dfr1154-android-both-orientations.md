@@ -97,3 +97,19 @@ Android 14. No error and no denial: the callback is simply never invoked, and
 a working advertiser is indistinguishable from an absent one. The flag is now
 claimed, and it is accurate: this scanner matches on advertisement contents and
 derives nothing about location.
+
+## Audit correction, 2026-09-09
+
+The original account above is retained, but its both-orientation activation
+and carriage claim is too strong for the records it contains. Orientation A
+records a scanner match; scenario 5 does not call the connection function. The
+39-byte ping-pong and Android-central connection establish the other
+orientation. Do not cite this report as proof of DFR-central connection.
+
+The full adapter also reconstructed NimBLE native address bytes with the
+reversing byte-array constructor. An on-board negative control now demonstrates
+that `c1:23:45:67:89:ab` becomes `ab:89:67:45:23:c1` under that old path, while
+the corrected `ble_addr_t` path preserves bytes and address type. This is an
+adapter defect, not a reason to change the BLE role or token rules. New
+central-carriage evidence must come from an actual connection and exact echo,
+not another scan.

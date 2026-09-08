@@ -162,11 +162,13 @@ Conformance is **not** established by passing this project's tests.
 
 ## 7. Why this is Candidate and not Stable
 
-**No two independent implementations have activated a BLE candidate against
-each other.** This document was written from the analysis of a gap, not from a
-failed interoperation, and the difference matters: a specification that has
-never been read by a second implementer is a hypothesis about what is
-sufficient.
+**The complete builder-interoperability criterion remains open.** The retained
+DFR1154/Android campaign establishes exact-token discovery in both orientations
+and GATT carriage with Android as central and the board as peripheral. Its
+reverse-orientation scan record does not establish connection or carriage.
+These platform stacks are different implementations, but this is not outside
+organisational review or a complete zero-prior machine lifecycle. Full
+lifecycle qualification, contention and public review remain required.
 
 There is a second, narrower reason. §3 spends four of the beacon's eight bytes
 on zeroes. That is the honest encoding of a 32-bit token into a field
