@@ -23,8 +23,14 @@
 # reading is that the log was re-captured after its digest was
 # written, but that is inference, not evidence, and no second
 # commit exists to confirm it. The digest below is the committed
-# file. Whether that file is the intended capture is an owner
-# question that has not been answered:
+# file.
+#
+# OWNER DISPOSITION: publish as-is. The historical provenance of
+# board-serial.log is unresolved, and it MUST NOT be treated as
+# independently integrity-verified evidence. No claim in
+# EVIDENCE_INDEX.json rests on it; the release's physical-carriage
+# claims are carried by other retained campaigns. See DISPOSITION.md
+# in this directory for the full record.
 #   board-serial.log
 
 DDDEA7140509EBC6544DF30B8F0E0FD4E80315D4F576D31D95A94615C4E7DBFC  board-serial.log
