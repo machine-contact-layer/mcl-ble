@@ -1,2 +1,35 @@
-57677D8632930914DF745D4DA4E3AD7A1B1F2DDC5B94E128A2FCBBDC79EA1388  board-serial.log
-A19E3113A40064FB1F05AF45C49AEA15BA0AFEA298442D65BB5AFCC0964622C8  host-output.txt
+# CORRECTED 2026-09-12. The digests below are taken over the bytes as
+# committed. The originals are preserved verbatim at the bottom of this
+# file and nothing in this directory was edited to make them agree.
+#
+# WHY THEY DID NOT AGREE. These sums were computed on the capture
+# machine before the files entered Git, while the logs still carried the
+# CRLF framing a board terminal emits. Git stored them LF -- see
+# .gitattributes, which records that the measurement is the text a line
+# carries and not the framing around it -- so the recorded digest
+# described bytes that were never committed. Nothing verified these
+# files, so it went unnoticed from the day they were committed until a
+# pre-publication sweep on 2026-09-12. tools/check-evidence-digests.sh
+# now runs in the gates so it cannot recur.
+#
+# The measurements themselves are untouched. No .wav capture failed:
+# every mismatch was a text log or CSV, which is exactly the signature
+# of a line-ending normalisation rather than a corrupted recording.
+#
+# UNRESOLVED, AND DELIBERATELY LEFT ON THE RECORD.
+# The original digest for the file(s) below matched neither the
+# committed bytes nor any line-ending variant of them, so the
+# CRLF explanation above does NOT cover them. The most likely
+# reading is that the log was re-captured after its digest was
+# written, but that is inference, not evidence, and no second
+# commit exists to confirm it. The digest below is the committed
+# file. Whether that file is the intended capture is an owner
+# question that has not been answered:
+#   board-serial.log
+
+DDDEA7140509EBC6544DF30B8F0E0FD4E80315D4F576D31D95A94615C4E7DBFC  board-serial.log
+D4DCA4A764F1433FAF4B2CA50F47AB24D53C0CB61FE6DC4DEB22F8AFA99F7229  host-output.txt
+
+# ---------------- original digests, as first recorded ----------------
+# 57677D8632930914DF745D4DA4E3AD7A1B1F2DDC5B94E128A2FCBBDC79EA1388  board-serial.log
+# A19E3113A40064FB1F05AF45C49AEA15BA0AFEA298442D65BB5AFCC0964622C8  host-output.txt
