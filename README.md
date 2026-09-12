@@ -1,6 +1,46 @@
-# MCL-BLE
+<p align="center">
+  <img src=".github/banner.png" alt="OJOBIT" width="100%">
+</p>
 
-`mcl-ble` defines an optional Bluetooth Low Energy binding for the Machine Contact Layer.
+<h1 align="center">MCL-BLE</h1>
+
+<p align="center"><strong>MCL over Bluetooth Low Energy, with the roles derived from the wire instead of chosen.</strong></p>
+
+<p align="center">
+  <a href="https://github.com/machine-contact-layer/mcl-ble/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/machine-contact-layer/mcl-ble/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="https://github.com/machine-contact-layer/mcl-ble/blob/main/LICENSE"><img alt="License Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-blue"></a>
+  <img alt="profile" src="https://img.shields.io/badge/BLE--GATT%20profile%201-Stable-brightgreen">
+  <img alt="activation" src="https://img.shields.io/badge/BLE--ACTIVATE--1-Candidate-yellow">
+</p>
+
+<p align="center">
+  <a href="https://github.com/machine-contact-layer/mcl-sdk"><b>Use the SDK instead</b></a> ·
+  <a href="https://github.com/machine-contact-layer/mcl-core"><b>Specifications</b></a> ·
+  <a href="https://github.com/machine-contact-layer/mcl-link"><b>mcl-link</b></a>
+</p>
+
+---
+
+> ### Most people should start with the SDK, not here
+>
+> This repository is a **specification**. If you are building a product, you
+> want [**mcl-sdk**](https://github.com/machine-contact-layer/mcl-sdk) — one CMake project, no sibling checkout, and a
+> working example you can run in about a minute. Come back here when you need
+> to know exactly what a byte means, or when you are writing an independent
+> implementation.
+
+## Why this exists
+
+BLE is almost everywhere, and it is a natural place for a contact to continue
+after two machines have found each other some other way. The hard part is not
+the transport — it is that both peers must agree who advertises and who scans
+without a human deciding. Here that role is **derived from the wire**, so two
+strangers converge on a connection instead of both waiting.
+
+Verified over real radios in both derived role orientations.
+
+**BLE-GATT profile 1 is Stable.** `BLE-ACTIVATE-1`, the activation procedure,
+is a Candidate profile.
 
 BLE may be used as an initial MCL transport or as a richer transport negotiated after first contact over another binding.
 
