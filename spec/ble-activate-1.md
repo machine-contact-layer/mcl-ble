@@ -166,9 +166,11 @@ Conformance is **not** established by passing this project's tests.
 DFR1154/Android campaign establishes exact-token discovery in both orientations
 and GATT carriage with Android as central and the board as peripheral. Its
 reverse-orientation scan record does not establish connection or carriage.
-These platform stacks are different implementations, but this is not outside
-organisational review or a complete zero-prior machine lifecycle. Full
-lifecycle qualification, contention and public review remain required.
+These platform stacks are different physical adapters, not independent protocol
+implementations. The retained DFR1154/Android campaign completed the zero-prior
+lifecycle in both BLE orientations, and the shared-air contention floor is
+closed. Independent external implementation and public review remain required
+before this Candidate profile could be promoted.
 
 There is a second, narrower reason. §3 spends four of the beacon's eight bytes
 on zeroes. That is the honest encoding of a 32-bit token into a field
